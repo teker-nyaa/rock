@@ -5,21 +5,31 @@
 #include <vector>
 #include <cmath>
 #include <map>
+#include <algorithm>
 
 int should_exit = 0;
 
 namespace Backend {
-    std::map<std::string, double> variables;
+    std::map<std::string, double> decimals;
+    std::map<std::string, int> integers;
+    std::map<std::string, std::string> strings = {{"", "null"}};
     std::map<std::string, std::string> functions;
+    std::map<std::string, std::string> special_lines;
 
     std::map<std::string, int> operators = {
         {"+", 1}, {"-", 2}, {"/", 3}, {"*", 4},
         {"sqrt", 5}, {"pow", 6}, {"%", 7}
     };
 
-    void VarDef(std::string name, int value) {
-        variables[name] = value;
-        std::cout << "'" << name << "' is equal to " << value;
+    void DecDef(std::string name, double value) {
+        decimals[name] = value;
+        std::cout << "decimal '" << name << "' is equal to " << value;
+        return;
+    }
+
+    void IntDef(std::string name, int value) {
+        decimals[name] = value;
+        std::cout << "integer '" << name << "' is equal to " << value;
         return;
     }
 
@@ -43,8 +53,33 @@ namespace Backend {
             v.push_back(s);
         }
 
-        if(v[0] == "$") {
-            VarDef(v[1], std::stoi(v[2]));
+        if(v[0] == "#") {
+            special_lines[v[1]] = 
+            return 0;
+        }
+
+        if(v[0] == "exit") {
+            should_exit = 1;
+            return 0;
+        }
+
+        if(v[0] == "$d") {
+            DecDef(v[1], std::stod(v[2]));
+            return 0;
+        }
+
+        if(v[0] == "$i") {
+            IntDef(v[1], std::stoi(v[2]));
+            return 0;
+        }
+
+        if(v[0] == "$s") {
+            std::string out;
+            for (int i = 3; v[i] != ")"; ++i) {
+                out.append(" ");
+                out.append(v[i]);
+            }
+            strings[v[1]] = out;
             return 0;
         }
 
@@ -58,14 +93,36 @@ namespace Backend {
             return Eval(functions[v[1]]);
         }
 
-        if(v[0] == "puts") {
-            return variables[v[1]];
+        if(v[0] == "putd") {
+            return decimals[v[1]];
         }
 
-        if(v[0] == "input") {
+        if(v[0] == "puts") {
+            if(v[1] != "(") {
+                std::cout << strings[v[1]] << std::endl;
+            }
+            else {
+                std::string out;
+                for (int i = 2; v[i] != ")"; ++i) {
+                    out.append(" ");
+                    out.append(v[i]);
+                }
+                std::cout << out << std::endl;
+            }
+            return 0;
+        }
+
+        if(v[0] == "din") {
             std::string data;
             std::getline(std::cin, data);
-            variables[v[1]] = std::stod(data);
+            decimals[v[1]] = std::stod(data);
+            return 1;
+        }
+
+        if(v[0] == "sin") {
+            std::string data;
+            std::getline(std::cin, data);
+            strings[v[1]] = std::stod(data);
             return 1;
         }
 
@@ -74,7 +131,7 @@ namespace Backend {
         try {
             x = std::stod(v[1]);
         } catch(const std::invalid_argument& e) {
-            x = variables[v[1]];
+            x = decimals[v[1]];
         }
         y = std::stod(v[2]);
 
